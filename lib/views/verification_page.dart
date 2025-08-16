@@ -46,6 +46,7 @@ class _VerificationPageState extends State<VerificationPage> {
           isLoading = false;
         });
         debugPrint("Verified");
+        Navigator.pushNamed(context,'/Authentication');
         break;
       }
     }
@@ -149,6 +150,8 @@ class _VerificationPageState extends State<VerificationPage> {
                                     "Email Verified!",
                                     style: TextStyle(color: Colors.green, fontSize: 18),
                                   ),
+                                  
+                                  
                                 const SizedBox(height: 20),
                                 if (!isEmailVerified)
                                   ElevatedButton(

@@ -194,7 +194,7 @@ class _IntroPageState extends State<IntroPage> {
                                 SizedBox(
                                   width: double.infinity,
                                   child: OutlinedButton.icon(
-                                    onPressed: () {
+                                    onPressed: () async {
                                       try {
                                         GoogleAuthProvider googleProvider =
                                             GoogleAuthProvider();
@@ -202,9 +202,20 @@ class _IntroPageState extends State<IntroPage> {
                                             FirebaseAuth.instance;
 
                                         // Sign in on the web
-                                        _auth.signInWithPopup(googleProvider);
+                                        await _auth.signInWithPopup(googleProvider);
 
-                                        Navigator.pushNamed(context, '/Main');
+                                        if (FirebaseAuth.instance.currentUser !=
+                                            null) {
+                                          Navigator.pushNamed(
+                                            context,
+                                            '/Authentication',
+                                          );
+                                        }
+
+                                        Navigator.pushNamed(
+                                          context,
+                                          '/Authentication',
+                                        );
                                       } catch (e) {
                                         ScaffoldMessenger.of(
                                           context,
@@ -321,7 +332,50 @@ class _IntroPageState extends State<IntroPage> {
                                     alignment: Alignment.centerRight,
                                     child: TextButton(
                                       onPressed: () {
-                                        print("Forgot password pressed");
+                                        final email =
+                                            emailController.text.trim();
+                                        if (email.isEmpty) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                'Please enter your email address.',
+                                              ),
+                                            ),
+                                          );
+                                          return;
+                                        }
+
+                                        try {
+                                          FirebaseAuth.instance
+                                              .sendPasswordResetEmail(
+                                                email: email,
+                                              );
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            const SnackBar(
+                                              content: Text(
+                                                'Password reset email sent.',
+                                              ),
+                                            ),
+                                          );
+                                        } on FirebaseAuthException catch (e) {
+                                          String errorMessage =
+                                              'An error occurred. Please try again.';
+                                          if (e.code == 'user-not-found') {
+                                            errorMessage =
+                                                'No account found for that email.';
+                                          }
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(errorMessage),
+                                            ),
+                                          );
+                                        }
                                       },
                                       child: Text(
                                         "Forgot password?",
@@ -338,164 +392,185 @@ class _IntroPageState extends State<IntroPage> {
                                   width: double.infinity,
                                   child: ElevatedButton(
                                     onPressed: () async {
-                                      if(isSignUp){
-                                        if (emailController.text.isEmpty||
-                                          !RegExp(
-                                            r'^[^@]+@[^@]+\.[^@]+',
-                                          ).hasMatch(emailController.text)) {
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              'Please enter a valid email address.',
-                                            ),
-                                            duration: const Duration(
-                                              seconds: 2,
-                                            ),
-                                          ),
-                                        );
-                                        
-                                        return;
-                                      }
-                                      if (passwordController.text.length < 6) {
+                                      if (isSignUp) {
+                                        if (emailController.text.isEmpty ||
+                                            !RegExp(
+                                              r'^[^@]+@[^@]+\.[^@]+',
+                                            ).hasMatch(emailController.text)) {
                                           ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              'Password must be at least 6 characters long.'
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                'Please enter a valid email address.',
+                                              ),
+                                              duration: const Duration(
+                                                seconds: 2,
+                                              ),
                                             ),
-                                            duration: const Duration(
-                                              seconds: 2,
+                                          );
+
+                                          return;
+                                        }
+                                        if (passwordController.text.length <
+                                            6) {
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                'Password must be at least 6 characters long.',
+                                              ),
+                                              duration: const Duration(
+                                                seconds: 2,
+                                              ),
                                             ),
-                                          ),
-                                        );
+                                          );
                                           return;
                                         }
                                         try {
-                                          final userCredential = await FirebaseAuth.instance.createUserWithEmailAndPassword(
-                                            email: emailController.text,
-                                            password: passwordController.text,
+                                          final userCredential =
+                                              await FirebaseAuth.instance
+                                                  .createUserWithEmailAndPassword(
+                                                    email: emailController.text,
+                                                    password:
+                                                        passwordController.text,
+                                                  );
+                                          Navigator.pushNamed(
+                                            context,
+                                            '/Authentication',
                                           );
-                                          Navigator.pushNamed(context, '/Authentication');
                                         } on FirebaseAuthException catch (e) {
                                           if (e.code == 'weak-password') {
                                             ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              'The password provided is too weak.',
-                                            ),
-                                            duration: const Duration(
-                                              seconds: 2,
-                                            ),
-                                          ),
-                                        );
-                                          } else if (e.code == 'email-already-in-use') {
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'The password provided is too weak.',
+                                                ),
+                                                duration: const Duration(
+                                                  seconds: 2,
+                                                ),
+                                              ),
+                                            );
+                                          } else if (e.code ==
+                                              'email-already-in-use') {
                                             ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              'The account already exists for that email.',
-                                            ),
-                                            duration: const Duration(
-                                              seconds: 2,
-                                            ),
-                                          ),
-                                        );
-                                          } else if (e.code == 'invalid-email') {
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'The account already exists for that email.',
+                                                ),
+                                                duration: const Duration(
+                                                  seconds: 2,
+                                                ),
+                                              ),
+                                            );
+                                          } else if (e.code ==
+                                              'invalid-email') {
                                             ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              'The email address is not valid.',
-                                            ),
-                                            duration: const Duration(
-                                              seconds: 2,
-                                            ),
-                                          ),
-                                        );
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'The email address is not valid.',
+                                                ),
+                                                duration: const Duration(
+                                                  seconds: 2,
+                                                ),
+                                              ),
+                                            );
                                           } else {
                                             ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              'Registration failed: ${e.message}',
-                                            ),
-                                            duration: const Duration(
-                                              seconds: 2,
-                                            ),
-                                          ),
-                                        );
+                                              context,
+                                            ).showSnackBar(
+                                              SnackBar(
+                                                content: Text(
+                                                  'Registration failed: ${e.message}',
+                                                ),
+                                                duration: const Duration(
+                                                  seconds: 2,
+                                                ),
+                                              ),
+                                            );
                                           }
                                         } catch (e) {
                                           ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              'An unexpected error occurred: $e',
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                'An unexpected error occurred: $e',
+                                              ),
+                                              duration: const Duration(
+                                                seconds: 2,
+                                              ),
                                             ),
-                                            duration: const Duration(
-                                              seconds: 2,
-                                            ),
-                                          ),
-                                        );
+                                          );
                                         }
-                                      }
-                                      else{
+                                      } else {
                                         try {
-                                        await FirebaseAuth.instance
-                                                .signInWithEmailAndPassword(
-                                                    email: emailController.text,
-                                                    password: passwordController.text);
-                                        // If login is successful, navigate to HomePage
-                                        if (mounted) { // Check if the widget is still in the tree
-                                          Navigator.pushNamed(context, '/Authentication');
+                                          await FirebaseAuth.instance
+                                              .signInWithEmailAndPassword(
+                                                email: emailController.text,
+                                                password:
+                                                    passwordController.text,
+                                              );
+                                          // If login is successful, navigate to HomePage
+                                          if (mounted) {
+                                            // Check if the widget is still in the tree
+                                            Navigator.pushNamed(
+                                              context,
+                                              '/Authentication',
+                                            );
+                                          }
+                                        } on FirebaseAuthException catch (e) {
+                                          String errorMessage =
+                                              'Please check email or password.';
+                                          if (e.code == 'user-not-found' ||
+                                              e.code == 'wrong-password' ||
+                                              e.code == 'invalid-email') {
+                                            errorMessage =
+                                                'Incorrect email or password.';
+                                          } else if (e.code ==
+                                              'user-disabled') {
+                                            errorMessage =
+                                                'This user has been disabled.';
+                                          } else if (e.code ==
+                                              'too-many-requests') {
+                                            errorMessage =
+                                                'Too many login attempts. Please try again later.';
+                                          }
+
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(errorMessage),
+                                              duration: const Duration(
+                                                seconds: 2,
+                                              ),
+                                            ),
+                                          );
+                                        } catch (e) {
+                                          // Catch any other unexpected errors
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            SnackBar(
+                                              content: Text(
+                                                'An unexpected error occurred: ${e.toString()}',
+                                              ),
+                                              duration: const Duration(
+                                                seconds: 2,
+                                              ),
+                                            ),
+                                          );
+                                          ;
                                         }
-                                      } on FirebaseAuthException catch (e) {
-                                        String errorMessage = 'An error occurred. Please try again.';
-                                        if (e.code == 'user-not-found' || e.code == 'wrong-password' || e.code == 'invalid-email') {
-                                          errorMessage = 'Incorrect email or password.';
-                                        } else if (e.code == 'user-disabled') {
-                                          errorMessage = 'This user has been disabled.';
-                                        } else if (e.code == 'too-many-requests') {
-                                          errorMessage = 'Too many login attempts. Please try again later.';
-                                        }
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              errorMessage,
-                                            ),
-                                            duration: const Duration(
-                                              seconds: 2,
-                                            ),
-                                          ),
-                                        );
-                                      } catch (e) {
-                                        // Catch any other unexpected errors
-                                        ScaffoldMessenger.of(
-                                          context,
-                                        ).showSnackBar(
-                                          SnackBar(
-                                            content: Text(
-                                              'An unexpected error occurred: ${e.toString()}',
-                                            ),
-                                            duration: const Duration(
-                                              seconds: 2,
-                                            ),
-                                          ),
-                                        );;
                                       }
-                                      }
-                                      
                                     },
                                     style: ElevatedButton.styleFrom(
                                       backgroundColor: Colors.yellow[700],
